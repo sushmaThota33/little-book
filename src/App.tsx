@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 import "./index.css";
 
 export default function App() {
-  const [writer, setWriter] = useState("Me");
+  const [writer, setWriter] = useState("Bujji");
   const [text, setText] = useState("");
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -69,57 +69,74 @@ export default function App() {
     return entries.filter((item) => item.written_month === currentMonth);
   }, [entries, currentMonth]);
 
-  const meCount = currentMonthEntries.filter((item) => item.writer === "Me").length;
-  const sumitCount = currentMonthEntries.filter((item) => item.writer === "Sumit").length;
+  const bujjiCount = currentMonthEntries.filter(
+    (item) => item.writer === "Bujji",
+  ).length;
+
+  const kannaCount = currentMonthEntries.filter(
+    (item) => item.writer === "Kanna",
+  ).length;
 
   const unlockedEntries = useMemo(() => {
-    return entries.filter((item) => item.unlock_date && item.unlock_date <= todayStr);
+    return entries.filter(
+      (item) => item.unlock_date && item.unlock_date <= todayStr,
+    );
   }, [entries, todayStr]);
 
   const lockedEntries = useMemo(() => {
-    return entries.filter((item) => item.unlock_date && item.unlock_date > todayStr);
+    return entries.filter(
+      (item) => item.unlock_date && item.unlock_date > todayStr,
+    );
   }, [entries, todayStr]);
+
+  const groupedUnlockedEntries = useMemo(() => {
+    return unlockedEntries.reduce((acc, item) => {
+      const month = item.written_month || "Unknown Month";
+      if (!acc[month]) acc[month] = [];
+      acc[month].push(item);
+      return acc;
+    }, {});
+  }, [unlockedEntries]);
 
   return (
     <div className="app">
-       <div className="hearts-bg">
-      <span>❤️</span>
-      <span>💗</span>
-      <span>💕</span>
-      <span>💖</span>
-      <span>💘</span>
-      <span>💞</span>
-      <span>❤️</span>
-      <span>💗</span>
-      <span>💕</span>
-      <span>💖</span>
-      <span>💘</span>
-      <span>💞</span>
-      <span>❤️</span>
-      <span>💗</span>
-      <span>💕</span>
-      <span>💖</span>
-    </div>
+      <div className="hearts-bg">
+        <span>❤️</span>
+        <span>💗</span>
+        <span>💕</span>
+        <span>💖</span>
+        <span>💘</span>
+        <span>💞</span>
+        <span>❤️</span>
+        <span>💗</span>
+        <span>💕</span>
+        <span>💖</span>
+        <span>💘</span>
+        <span>💞</span>
+        <span>❤️</span>
+        <span>💗</span>
+        <span>💕</span>
+        <span>💖</span>
+      </div>
       <div className="book">
         <h1>Little Things We Love ❤️</h1>
 
         <div className="card">
           <h2>Write a note</h2>
 
-          <div className="row">
-            <button
-              className={writer === "Me" ? "active" : ""}
-              onClick={() => setWriter("Me")}
-            >
-              Me
-            </button>
-            <button
-              className={writer === "Sumit" ? "active" : ""}
-              onClick={() => setWriter("Sumit")}
-            >
-              Sumit
-            </button>
-          </div>
+          <button
+            className={writer === "Bujji" ? "active" : ""}
+            onClick={() => setWriter("Bujji")}
+          >
+            Bujji
+          </button>
+
+          <button
+            className={writer === "Kanna" ? "active" : ""}
+            onClick={() => setWriter("Kanna")}
+          >
+            Kanna
+          </button>
 
           <textarea
             placeholder="Write something sweet..."
@@ -127,7 +144,9 @@ export default function App() {
             onChange={(e) => setText(e.target.value)}
           />
 
-          <p className="hint">This note will unlock automatically on next month 3rd.</p>
+          <p className="hint">
+            This note will unlock automatically on next month 3rd.
+          </p>
 
           <button onClick={handleSave} disabled={loading}>
             {loading ? "Saving..." : "Save note"}
@@ -138,11 +157,11 @@ export default function App() {
 
         <div className="card">
           <h2>This Month Count</h2>
-          <p>Me: {meCount} points</p>
-          <p>Sumit: {sumitCount} points</p>
+          <p>Bujji: {bujjiCount} points</p>
+          <p>Kanna: {kannaCount} points</p>
         </div>
 
-        <div className="card">
+        {/* <div className="card">
           <h2>Locked Notes 🔒</h2>
           {lockedEntries.length === 0 ? (
             <p>No locked notes</p>
@@ -154,21 +173,30 @@ export default function App() {
               </div>
             ))
           )}
-        </div>
+        </div> */}
 
         <div className="card">
           <h2>Unlocked Notes 📖</h2>
-          {unlockedEntries.length === 0 ? (
+          {Object.keys(groupedUnlockedEntries).length === 0 ? (
             <p>No notes unlocked yet</p>
           ) : (
-            unlockedEntries.map((item) => (
-              <div key={item.id} className="note">
-                <p><strong>{item.writer}</strong></p>
-                <p>{item.text}</p>
-                <small>
-                  Written month: {item.written_month} | Opened from: {item.unlock_date}
-                </small>
-              </div>
+            Object.entries(groupedUnlockedEntries).map(([month, notes]) => (
+              <details key={month} className="month-section">
+                <summary>
+                  {month} — {notes.length} note{notes.length > 1 ? "s" : ""}
+                </summary>
+
+                <div className="month-notes">
+                  {notes.map((item) => (
+                    <div key={item.id} className="note">
+                      <p>
+                        <strong>{item.writer}</strong>
+                      </p>
+                      <p>{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </details>
             ))
           )}
         </div>

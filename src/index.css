@@ -197,3 +197,29 @@ input[type="date"]{
   position:relative;
   z-index:1;
 }
+
+
+.month-section {
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: #fff7f8;
+  overflow: hidden;
+  border: 1px solid #f3c7cf;
+}
+
+.month-section summary {
+  cursor: pointer;
+  padding: 14px 16px;
+  font-weight: 600;
+  color: #8b1e3f;
+  background: #ffe4ea;
+  list-style: none;
+}
+
+.month-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.month-notes {
+  padding: 12px;
+}
