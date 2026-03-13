@@ -8,6 +8,8 @@ export default function App() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [openedMonths, setOpenedMonths] = useState({});
+  const [expandedMonths, setExpandedMonths] = useState({});
 
   const today = new Date();
   const todayStr = formatDate(today);
@@ -98,6 +100,44 @@ export default function App() {
     }, {});
   }, [unlockedEntries]);
 
+  const groupedMonths = useMemo(() => {
+    return entries.reduce((acc, item) => {
+      if (!item.written_month) return acc;
+
+      const month = item.written_month;
+
+      if (!acc[month]) {
+        acc[month] = {
+          unlockDate: item.unlock_date,
+          notes: [],
+          unlocked: item.month_unlocked || false,
+        };
+      }
+
+      acc[month].notes.push(item);
+
+      if (item.month_unlocked) {
+        acc[month].unlocked = true;
+      }
+
+      return acc;
+    }, {});
+  }, [entries]);
+
+  async function unlockMonth(month) {
+  const { error } = await supabase
+    .from("entries")
+    .update({ month_unlocked: true })
+    .eq("written_month", month);
+
+  if (error) {
+    console.error("Unlock error:", error);
+    return;
+  }
+
+  await fetchEntries();
+}
+
   return (
     <div className="app">
       <div className="hearts-bg">
@@ -176,28 +216,75 @@ export default function App() {
         </div> */}
 
         <div className="card">
-          <h2>Unlocked Notes 📖</h2>
-          {Object.keys(groupedUnlockedEntries).length === 0 ? (
-            <p>No notes unlocked yet</p>
-          ) : (
-            Object.entries(groupedUnlockedEntries).map(([month, notes]) => (
-              <details key={month} className="month-section">
-                <summary>
-                  {month} — {notes.length} note{notes.length > 1 ? "s" : ""}
-                </summary>
+          <h2>Monthly Notes 📖</h2>
 
-                <div className="month-notes">
-                  {notes.map((item) => (
-                    <div key={item.id} className="note">
-                      <p>
-                        <strong>{item.writer}</strong>
+          {Object.keys(groupedMonths).length === 0 ? (
+            <p>No notes yet</p>
+          ) : (
+            Object.entries(groupedMonths).map(([month, group]) => {
+              const canUnlock = group.unlockDate <= todayStr;
+              const isExpanded = expandedMonths[month] || false;
+
+              return (
+                <div key={month} className="month-section-custom">
+                  <div className="month-header">
+                    <div>
+                      <strong>{month}</strong>
+                      <p className="month-subtext">
+                        {group.notes.length} note
+                        {group.notes.length > 1 ? "s" : ""}
                       </p>
-                      <p>{item.text}</p>
                     </div>
-                  ))}
+
+                    {!group.unlocked ? (
+                      canUnlock ? (
+                        <button
+                          className="unlock-btn"
+                          onClick={async () => {
+                            await unlockMonth(month);
+                            setExpandedMonths((prev) => ({
+                              ...prev,
+                              [month]: true,
+                            }));
+                          }}
+                        >
+                          Unlock Notes 🔓
+                        </button>
+                      ) : (
+                        <span className="locked-badge">
+                          Opens on {group.unlockDate}
+                        </span>
+                      )
+                    ) : (
+                      <button
+                        className="unlock-btn secondary"
+                        onClick={() =>
+                          setExpandedMonths((prev) => ({
+                            ...prev,
+                            [month]: !prev[month],
+                          }))
+                        }
+                      >
+                        {isExpanded ? "Collapse Notes" : "View Notes"}
+                      </button>
+                    )}
+                  </div>
+
+                  {group.unlocked && isExpanded && (
+                    <div className="month-notes">
+                      {group.notes.map((item) => (
+                        <div key={item.id} className="note">
+                          <p>
+                            <strong>{item.writer}</strong>
+                          </p>
+                          <p>{item.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </details>
-            ))
+              );
+            })
           )}
         </div>
       </div>
